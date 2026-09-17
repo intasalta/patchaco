@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relevamientos Prediales PATChaco - INTA Salta-Jujuy</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class' }
+  </script>
+  
+  <!-- Feather Icons -->
+  <script src="https://unpkg.com/feather-icons"></script>
+  
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- SheetJS para lectura dinámica del archivo Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    #map { height: 420px; width: 100%; border-radius: 1rem; z-index: 10; }
+  </style>
+
+  <script>
+    if (localStorage.theme === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  </script>
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col justify-between transition-colors duration-300">
+
+  <!-- HEADER INSTITUCIONAL -->
+  <header class="bg-gradient-to-r from-[#0B7BAF] via-[#08618B] to-[#054869] text-white shadow-lg sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+      
+      <div class="flex items-center space-x-4">
+        <img src="./Logo_INTA.png" alt="Logo INTA" class="h-12 bg-white p-1 rounded-lg shadow-md" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/2/23/INTA_logo.png';">
+        <div>
+          <h1 class="text-lg sm:text-xl font-bold tracking-tight">Portal de Relevamientos Prediales</h1>
+          <p class="text-blue-200 text-xs font-medium">Consolidado de Predios PATChaco - INTA Centro Regional Salta y Jujuy</p>
+        </div>
+      </div>
+
+      <!-- BOTONES DEL HEADER -->
+      <div class="flex items-center gap-3">
+        <button id="info-modal-btn" type="button" class="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-blue-100 border border-white/20 text-xs font-semibold transition-all">
+          <i data-feather="info" class="h-4 w-4"></i>
+          <span>¿Quiénes Somos?</span>
+        </button>
+
+        <button id="theme-toggle" type="button" class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-blue-100 border border-white/20 transition-all">
+          <i id="theme-toggle-dark-icon" data-feather="moon" class="hidden h-5 w-5"></i>
+          <i id="theme-toggle-light-icon" data-feather="sun" class="hidden h-5 w-5 text-amber-300"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
+
+    <!-- BANNER GENERAL -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/60">
+      <div>
+        <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white">Consolidado de Relevamientos Prediales</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Monitoreo territorial de unidades de manejo, uso de suelo y caracterización productiva</p>
+      </div>
+      <div class="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+        <i data-feather="check-circle" class="h-4 w-4"></i>
+        <span id="kpi-count-predios">Cargando...</span>
+      </div>
+    </div>
+
+    <!-- TARJETAS DE MÉTRICAS GLOBALES (4x2 en escritorio / 2x4 en celular) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      
+      <!-- 1. Sup. Total -->
+      <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center gap-3">
+        <div class="p-2.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-xl flex items-center justify-center">
+          <span class="text-xl leading-none">🗺️</span>
+        </div>
+        <div>
+          <p class="text-[10px] text-slate-400 font-bold uppercase">Sup. Total</p>
+          <p id="kpi-sup-total" class="text-base font-black text-slate-800 dark:text-white">0 ha</p>
+        </div>
+      </div>
+
+      <!-- 2. Sup. Manejo -->
+      <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center gap-3">
+        <div class="p-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center">
+          <span class="text-xl leading-none">🌱</span>
+        </div>
+        <div>
+          <p class="text-[10px] text-slate-400 font-bold uppercase">Sup. Manejo</p>
+          <p id="kpi-sup-manejo" class="text-base font-black text-slate-800 dark:text-white">0 ha</p>
+        </div>
+      </div>
+
+      <!-- 3. Bovinos -->
+      <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center gap-3">
+        <div class="p-2.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center">
+          <span class="text-xl leading-none">🐮</span>
+        </div>
+        <div>
+          <p class="text-[10px] text-slate-400 font-bold uppercase">Bovinos</p>
+          <p id="kpi-bovinos" class="text-base font-black text-slate-800 dark:text-white">0 cab.</p>
+        </div>
+      </div>
+
+      <!-- 4. Caprinos -->
+      <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center gap-3">
+        <div class="p-2.5 bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-xl flex items-center justify-center">
+          <span class="text-xl leading-none">🐐</span>
+        </div>
+        <div>
+          <p class="text-[10px] text-slate-400 font-bold uppercase">Caprinos</p>
+          <p id="kpi-caprinos" class="text-base font-black text-slate-800 dark:text-white">0 cab.</p>
+        </div>
+      </div>
+
+      <!-- 5. Ovinos -->
+      <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center gap-3">
+        <div class="p-2.5 bg-pink-500/10 text-pink-600 dark:text-pink-400 rounded-xl flex items-center justify-center">
+          <span class="text-xl leading-none">🐑</span>
+        </div>
+        <div>
+          <p class="text-[10px] text-slate-400 font-bold uppercase">Ovinos</p>
+          <p id="kpi-ovinos" class="text-base font-black text-slate-800 dark:text-white">0 cab.</p>
+        </div>
+      </div>
+
+      <!-- 6. Porcinos -->
+      <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center gap-3">
+        <div class="p-2.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl flex items-center justify-center">
+          <span class="text-xl leading-none">🐷</span>
+        </div>
+        <div>
+          <p class="text-[10px] text-slate-400 font-bold uppercase">Porcinos</p>
+          <p id="kpi-porcinos" class="text-base font-black text-slate-800 dark:text-white">0 cab.</p>
+        </div>
+      </div>
+
+      <!-- 7. Equinos -->
+      <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center gap-3">
+        <div class="p-2.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center">
+          <span class="text-xl leading-none">🐴</span>
+        </div>
+        <div>
+          <p class="text-[10px] text-slate-400 font-bold uppercase">Equinos</p>
+          <p id="kpi-equinos" class="text-base font-black text-slate-800 dark:text-white">0 cab.</p>
+        </div>
+      </div>
+
+      <!-- 8. Georeferenciados -->
+      <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center gap-3">
+        <div class="p-2.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl flex items-center justify-center">
+          <span class="text-xl leading-none">📍</span>
+        </div>
+        <div>
+          <p class="text-[10px] text-slate-400 font-bold uppercase">Georeferenciados</p>
+          <p id="kpi-georef" class="text-base font-black text-slate-800 dark:text-white">0 / 0</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- BUSCADOR Y FILTROS -->
+    <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/60 flex flex-col sm:flex-row gap-4 justify-between items-center">
+      <div class="relative w-full sm:w-96">
+        <i data-feather="search" class="absolute left-3.5 top-3 h-4 w-4 text-slate-400"></i>
+        <input type="text" id="input-search" placeholder="Buscar por predio, titular o localidad..." class="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500">
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+        <select id="filter-provincia" class="text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500">
+          <option value="">Todas las Provincias</option>
+          <option value="Salta">Salta</option>
+          <option value="Jujuy">Jujuy</option>
+        </select>
+
+        <select id="filter-departamento" class="text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500">
+          <option value="">Todos los Departamentos</option>
+          <option value="Rivadavia">Rivadavia (Salta)</option>
+          <option value="Santa Barbara">Santa Bárbara (Jujuy)</option>
+          <option value="Dr. Manuel Belgrano">Dr. Manuel Belgrano (Jujuy)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- SECCIÓN DE MAPA Y TARJETAS -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      
+      <!-- MAPA INTERACTIVO -->
+      <div class="lg:col-span-1 lg:sticky lg:top-24 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/60 flex flex-col justify-between">
+        <div>
+          <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2 mb-3">
+            <i data-feather="map-pin" class="h-5 w-5 text-sky-500"></i> Ubicación Georeferenciada
+          </h3>
+          <div id="map"></div>
+        </div>
+        <div class="mt-3 text-[11px] text-slate-400 space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+            <span>Verde: Marcador georeferenciado.</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+            <span>Naranja: Sin coordenadas en ficha.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRILLA DE PREDIOS -->
+      <div class="lg:col-span-2 space-y-4">
+        <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+          <i data-feather="home" class="h-5 w-5 text-emerald-500"></i> Unidades de Manejo Relevadas
+        </h3>
+
+        <div id="grid-predios" class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4">
+          <!-- Tarjetas dinámicas -->
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+  
+  <!-- MODAL DETALLES DEL PREDIO -->
+  <div id="predio-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-700 relative max-h-[90vh] overflow-y-auto">
+      
+      <button id="close-predio-modal" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg transition-colors">
+        <i data-feather="x" class="h-6 w-6"></i>
+      </button>
+
+      <div id="predio-modal-content">
+        <!-- Contenido dinámico -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ACERCA DE -->
+  <div id="info-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-700 relative max-h-[90vh] overflow-y-auto">
+      
+      <button id="close-modal-btn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg transition-colors">
+        <i data-feather="x" class="h-6 w-6"></i>
+      </button>
+
+      <div class="flex items-center gap-3 mb-4">
+        <div class="p-3 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-xl">
+          <i data-feather="help-circle" class="h-6 w-6"></i>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white">Acerca del Proyecto PATChaco</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">INTA Centro Regional Salta-Jujuy</p>
+        </div>
+      </div>
+
+      <div class="space-y-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+        <div>
+          <h4 class="font-semibold text-slate-800 dark:text-slate-100 mb-1">¿Qué es esta plataforma?</h4>
+          <p>
+            Este tablero consolida los datos recolectados en las fichas de relevamiento territorial del proyecto <b>PATChaco</b>.
+          </p>
+        </div>
+
+        <hr class="border-slate-100 dark:border-slate-700/60">
+
+        <div class="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800 space-y-1">
+          <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">Contacto Institucional:</p>
+          <p class="text-xs">Estación Experimental Agropecuaria Salta - INTA</p>
+          <p class="text-xs text-sky-600 dark:text-sky-400">Ruta Nacional 68 Km 172, Cerrillos, Salta</p>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button id="confirm-modal-btn" class="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-xl transition-all">
+          Entendido
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700/60 py-8 mt-12 transition-colors">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col items-center gap-4 text-center">
+      <img src="./MECON-Agricultura-BLANCO.png" alt="Secretaría de Agricultura, Ganadería y Pesca" class="h-16 md:h-20 w-auto opacity-90 invert dark:invert-0 transition-all" onerror="this.style.display='none'">
+      <p class="text-xs text-slate-400">INTA Centro Regional Salta-Jujuy &copy; 2026 - Sistema de Gestión de Relevamientos Prediales</p>
+    </div>
+  </footer>
+
+  <!-- LÓGICA Y DATOS -->
+  <script>
+    // Datos de respaldo (fallback) en caso de que falle la carga remota del Excel
+    let prediosData = [
+      {"id": 1, "nombre": "Los Hermanos Rojas Km79", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Anibal Iginio Rojas", "bovinos": 8, "caprinos": 0, "ovinos": 0, "equinos": 2, "porcinos": 0, "sup_total": 20.0, "sup_manejo": 20.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.1089, "lng": -63.0672, "has_coords": true},
+      {"id": 2, "nombre": "Finca Las Vachichas", "localidad": "Palma Sola", "depto": "Santa Barbara", "provincia": "Jujuy", "titulares": "Carlos Antonio Ruiz", "bovinos": 200, "caprinos": 0, "ovinos": 0, "equinos": 0, "porcinos": 0, "sup_total": 2400.0, "sup_manejo": 2400.0, "plan": "Informal", "limites": "Sí", "poligono": "No", "tec": "José Augusto Echenique", "org": "INTA (EECT Yuto)", "tel": "3886856129", "email": "echenique.jose@inta.gob.ar", "lat": null, "lng": null, "has_coords": false},
+      {"id": 3, "nombre": "La Plateada", "localidad": "Juan Galán", "depto": "Dr. Manuel Belgrano", "provincia": "Jujuy", "titulares": "Pedro Colque, Eduardo y Natialia Yañez", "bovinos": 100, "caprinos": 0, "ovinos": 0, "equinos": 0, "porcinos": 0, "sup_total": 300.0, "sup_manejo": 100.0, "plan": "Informal / formal", "limites": "si", "poligono": "", "tec": "Walter Setti", "org": "INTA", "tel": "3885725699", "email": "setti.walter@inta.gob.ar", "lat": null, "lng": null, "has_coords": false},
+      {"id": 4, "nombre": "Finca Agua Salada", "localidad": "Palma Sola", "depto": "Santa Barbara", "provincia": "Jujuy", "titulares": "Rene Vallejos Rueda", "bovinos": 60, "caprinos": 0, "ovinos": 0, "equinos": 0, "porcinos": 0, "sup_total": 370.0, "sup_manejo": 370.0, "plan": "Informal", "limites": "Sí", "poligono": "No", "tec": "José Augusto Echenique", "org": "INTA (EECT Yuto)", "tel": "3886856129", "email": "echenique.jose@inta.gob.ar", "lat": null, "lng": null, "has_coords": false},
+      {"id": 5, "nombre": "SAN MANUEL", "localidad": "La Unión", "depto": "Rivadavia", "provincia": "Salta", "titulares": "JESUS CARABAJAL", "bovinos": 120, "caprinos": 200, "ovinos": 120, "equinos": 0, "porcinos": 50, "sup_total": 400.0, "sup_manejo": 400.0, "plan": "No", "limites": "Sí", "poligono": "no", "tec": "ROSSETTO ASTORGA CRISTINA BEATRIZ", "org": "INTA", "tel": "3878641984", "email": "rosetto.cristina@inta.gob.ar", "lat": null, "lng": null, "has_coords": false},
+      {"id": 6, "nombre": "El Pintao", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Crisanto Verón", "bovinos": 50, "caprinos": 0, "ovinos": 0, "equinos": 0, "porcinos": 0, "sup_total": 560.0, "sup_manejo": 650.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0217, "lng": -63.0084, "has_coords": true},
+      {"id": 7, "nombre": "Don Genaro", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Genaro Palomo (Juan Palomo)", "bovinos": 60, "caprinos": 0, "ovinos": 0, "equinos": 4, "porcinos": 15, "sup_total": 900.0, "sup_manejo": 900.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0637, "lng": -63.0114, "has_coords": true},
+      {"id": 8, "nombre": "Las Flores", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Javier Ceballos", "bovinos": 50, "caprinos": 8, "ovinos": 6, "equinos": 0, "porcinos": 0, "sup_total": 400.0, "sup_manejo": 400.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0682, "lng": -62.9738, "has_coords": true},
+      {"id": 9, "nombre": "Rincón del Tigre", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Jose Luis Ceballos", "bovinos": 80, "caprinos": 0, "ovinos": 35, "equinos": 0, "porcinos": 10, "sup_total": 720.0, "sup_manejo": 720.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0374, "lng": -62.966, "has_coords": true},
+      {"id": 10, "nombre": "Virgen del Carmen", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Luis José Ceballos", "bovinos": 60, "caprinos": 0, "ovinos": 45, "equinos": 0, "porcinos": 0, "sup_total": 900.0, "sup_manejo": 900.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0412, "lng": -63.0233, "has_coords": true},
+      {"id": 11, "nombre": "La Castaña", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Oscar Acevedo- Serafina Albornoz", "bovinos": 40, "caprinos": 0, "ovinos": 18, "equinos": 0, "porcinos": 0, "sup_total": 560.0, "sup_manejo": 560.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0746, "lng": -62.9935, "has_coords": true},
+      {"id": 12, "nombre": "La Esperanza", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Pablo Alcides Ceballos", "bovinos": 53, "caprinos": 27, "ovinos": 24, "equinos": 0, "porcinos": 8, "sup_total": 400.0, "sup_manejo": 400.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0825, "lng": -62.9689, "has_coords": true},
+      {"id": 13, "nombre": "San Expedito", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Susana Ceballos e Idel Ruiz", "bovinos": 70, "caprinos": 0, "ovinos": 0, "equinos": 0, "porcinos": 0, "sup_total": 560.0, "sup_manejo": 650.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0426, "lng": -63.0004, "has_coords": true},
+      {"id": 14, "nombre": "Virgen del Carmen", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Zaturnino Ceballos", "bovinos": 158, "caprinos": 0, "ovinos": 50, "equinos": 0, "porcinos": 0, "sup_total": 1050.0, "sup_manejo": 1050.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.05, "lng": -63.0652, "has_coords": true}
+    ];
+
+    async function cargarDatosDesdeExcel() {
+      try {
+        const response = await fetch('./Consolidado_Relevamientos.xlsx');
+        if (!response.ok) throw new Error("No se pudo cargar el archivo Excel dinámicamente.");
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet);
+
+        prediosData = rows.map(r => {
+          const lat = parseFloat(r.lat_centro);
+          const lng = parseFloat(r.long_centro);
+          const hasCoords = !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+
+          return {
+            id: parseInt(r.codigo) || 0,
+            nombre: String(r.nombre_unidad || '').trim(),
+            localidad: String(r.localidad || '').trim(),
+            depto: String(r.departamento || '').trim(),
+            provincia: String(r.provincia || '').trim(),
+            titulares: String(r.titulares || '').trim(),
+            bovinos: parseInt(r.cant_bovinos) || 0,
+            caprinos: parseInt(r.cant_caprinos) || 0,
+            ovinos: parseInt(r.cant_ovinos) || 0,
+            equinos: parseInt(r.cant_equinos) || 0,
+            porcinos: parseInt(r.cant_porcinos) || 0,
+            sup_total: parseFloat(r.superficie_total_ha) || 0,
+            sup_manejo: parseFloat(r.superficie_manejo_ha) || 0,
+            plan: String(r.plan_de_manejo || ''),
+            limites: String(r.limites_definidos || ''),
+            poligono: String(r.poligono || ''),
+            tec: String(r.tec_ref_nombre || '').trim(),
+            org: String(r.tec_ref_organizacion || '').trim(),
+            tel: String(r.tec_ref_telefono || '').trim(),
+            email: String(r.tec_ref_email || '').trim(),
+            lat: hasCoords ? lat : null,
+            lng: hasCoords ? lng : null,
+            has_coords: hasCoords
+          };
+        });
+      } catch (e) {
+        console.warn("Aviso: Leyendo desde los datos de respaldo.", e);
+      } finally {
+        renderDashboard();
+      }
+    }
+
+    const greenIcon = new L.Icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+
+    // --- CONFIGURACIÓN DE CAPAS BASE PARA EL MAPA ---
+    const argenmap = L.tileLayer('https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/capabaseargenmap@EPSG%3A3857@png/{z}/{x}/{-y}.png', {
+      maxZoom: 18,
+      minZoom: 3,
+      attribution: '&copy; <a href="https://www.ign.gob.ar/" target="_blank">IGN Argentina</a>'
+    });
+
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+    });
+
+    const googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      attribution: '&copy; Google Maps'
+    });
+
+    // Inicialización del mapa con Google Satelital como capa por defecto
+    const map = L.map('map', {
+      center: [-22.5, -63.5],
+      zoom: 7,
+      layers: [googleSat]
+    });
+
+    // Diccionario de capas para el selector interactivo
+    const baseMaps = {
+      "Google Satelital": googleSat,
+      "OpenStreetMap": osm,
+      "Argenmap (IGN)": argenmap
+    };
+
+    // Agregar selector de capas arriba a la derecha
+    L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
+
+    const markersGroup = L.featureGroup().addTo(map);
+
+    const grid = document.getElementById('grid-predios');
+    const inputSearch = document.getElementById('input-search');
+    const filterProv = document.getElementById('filter-provincia');
+    const filterDepto = document.getElementById('filter-departamento');
+
+    function renderDashboard() {
+      const searchVal = inputSearch.value.toLowerCase().trim();
+      const provVal = filterProv.value;
+      const deptoVal = filterDepto.value;
+
+      grid.innerHTML = '';
+      markersGroup.clearLayers();
+
+      let totalSup = 0;
+      let totalManejo = 0;
+      let totalBovinos = 0;
+      let totalOvinos = 0;
+      let totalCaprinos = 0;
+      let totalPorcinos = 0;
+      let totalEquinos = 0;
+      let countGeoref = 0;
+
+      const filtered = prediosData.filter(p => {
+        const matchSearch = p.nombre.toLowerCase().includes(searchVal) ||
+                            p.titulares.toLowerCase().includes(searchVal) ||
+                            p.localidad.toLowerCase().includes(searchVal);
+        const matchProv = !provVal || p.provincia === provVal;
+        const matchDepto = !deptoVal || p.depto.toLowerCase().includes(deptoVal.toLowerCase());
+        return matchSearch && matchProv && matchDepto;
+      });
+
+      filtered.forEach(p => {
+        totalSup += p.sup_total;
+        totalManejo += p.sup_manejo;
+        totalBovinos += p.bovinos;
+        totalOvinos += p.ovinos;
+        totalCaprinos += p.caprinos;
+        totalPorcinos += p.porcinos;
+        totalEquinos += p.equinos;
+
+        if (p.has_coords) {
+          countGeoref++;
+          const marker = L.marker([p.lat, p.lng], { icon: greenIcon })
+            .bindPopup(`
+              <div style="font-family: sans-serif; font-size: 12px; line-height: 1.4;">
+                <b style="font-size: 14px; color: #0284c7;">${p.nombre}</b><br>
+                <span><b>Titular:</b> ${p.titulares}</span><br>
+                <span><b>Localidad:</b> ${p.localidad} (${p.depto})</span><br>
+                <span><b>Sup. Manejo:</b> ${p.sup_manejo} ha</span><br>
+                <div style="margin-top: 4px; border-top: 1px solid #e2e8f0; pt-1">
+                  <span><b>Bovinos:</b> ${p.bovinos} | <b>Ovinos:</b> ${p.ovinos}</span><br>
+                  <span><b>Caprinos:</b> ${p.caprinos} | <b>Equinos:</b> ${p.equinos} | <b>Porcinos:</b> ${p.porcinos}</span>
+                </div>
+                <button onclick="verDetallePredio(${p.id})" style="margin-top:8px; width:100%; color:#fff; background:#0284c7; border:none; padding:5px 8px; border-radius:6px; cursor:pointer; font-weight:600;">Ver Detalle</button>
+              </div>
+            `);
+          markersGroup.addLayer(marker);
+        }
+
+        const cardHTML = `
+          <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-700/60 flex flex-col justify-between hover:border-sky-500/50 transition-all">
+            <div>
+              <div class="flex justify-between items-start mb-2">
+                <div>
+                  <h4 class="font-bold text-slate-800 dark:text-white text-base">${p.nombre}</h4>
+                  <p class="text-xs text-slate-400">${p.localidad} • ${p.depto}</p>
+                </div>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${p.has_coords ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}">
+                  ${p.has_coords ? 'Georeferenciado' : 'Sin mapa'}
+                </span>
+              </div>
+
+              <p class="text-xs text-slate-600 dark:text-slate-300 font-medium mb-3">
+                <span class="text-slate-400">Titular:</span> ${p.titulares}
+              </p>
+
+              <!-- GRILLA DE MÉTRICAS DE LA TARJETA (2 Filas: Sup y Ganadería) -->
+              <div class="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 my-3 space-y-2">
+                <div class="flex justify-between items-center text-xs pb-1.5 border-b border-slate-200/60 dark:border-slate-800">
+                  <span class="text-[10px] text-slate-400 font-bold uppercase">Sup. Manejo</span>
+                  <span class="font-extrabold text-slate-800 dark:text-white">${p.sup_manejo} ha</span>
+                </div>
+                
+                <div class="grid grid-cols-5 gap-1 text-center">
+                  <div>
+                    <p class="text-[8px] text-slate-400 font-bold uppercase">Bov</p>
+                    <p class="text-[11px] font-bold text-sky-600 dark:text-sky-400">${p.bovinos}</p>
+                  </div>
+                  <div>
+                    <p class="text-[8px] text-slate-400 font-bold uppercase">Ovi</p>
+                    <p class="text-[11px] font-bold text-pink-600 dark:text-pink-400">${p.ovinos}</p>
+                  </div>
+                  <div>
+                    <p class="text-[8px] text-slate-400 font-bold uppercase">Cap</p>
+                    <p class="text-[11px] font-bold text-orange-600 dark:text-orange-400">${p.caprinos}</p>
+                  </div>
+                  <div>
+                    <p class="text-[8px] text-slate-400 font-bold uppercase">Equ</p>
+                    <p class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">${p.equinos}</p>
+                  </div>
+                  <div>
+                    <p class="text-[8px] text-slate-400 font-bold uppercase">Por</p>
+                    <p class="text-[11px] font-bold text-rose-600 dark:text-rose-400">${p.porcinos}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-2">
+              <button onclick="verDetallePredio(${p.id})" class="flex items-center justify-center gap-2 w-full py-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs rounded-xl transition-all shadow-sm">
+                Ficha Completa <i data-feather="eye" class="h-3.5 w-3.5"></i>
+              </button>
+            </div>
+          </div>
+        `;
+        grid.insertAdjacentHTML('beforeend', cardHTML);
+      });
+
+      // ACTUALIZACIÓN DE KPIS GLOBALES
+      document.getElementById('kpi-count-predios').innerText = `${filtered.length} Unidades Consolidadas`;
+      document.getElementById('kpi-sup-total').innerText = `${totalSup.toLocaleString('es-AR')} ha`;
+      document.getElementById('kpi-sup-manejo').innerText = `${totalManejo.toLocaleString('es-AR')} ha`;
+      document.getElementById('kpi-bovinos').innerText = `${totalBovinos.toLocaleString('es-AR')} cab.`;
+      document.getElementById('kpi-ovinos').innerText = `${totalOvinos.toLocaleString('es-AR')} cab.`;
+      document.getElementById('kpi-caprinos').innerText = `${totalCaprinos.toLocaleString('es-AR')} cab.`;
+      document.getElementById('kpi-porcinos').innerText = `${totalPorcinos.toLocaleString('es-AR')} cab.`;  
+      document.getElementById('kpi-equinos').innerText = `${totalEquinos.toLocaleString('es-AR')} cab.`; 
+      document.getElementById('kpi-georef').innerText = `${countGeoref} / ${filtered.length}`;
+
+      if (markersGroup.getLayers().length > 0) {
+        map.fitBounds(markersGroup.getBounds(), { padding: [30, 30] });
+      }
+
+      feather.replace();
+    }
+
+    const predioModal = document.getElementById('predio-modal');
+    const predioModalContent = document.getElementById('predio-modal-content');
+    const closePredioModalBtn = document.getElementById('close-predio-modal');
+
+    window.verDetallePredio = function(id) {
+      const p = prediosData.find(item => item.id === id);
+      if (!p) return;
+
+      // Limpiar el teléfono dejando solo dígitos para el enlace wa.me
+      const cleanPhone = p.tel ? p.tel.replace(/\D/g, '') : '';
+      
+      // Si el teléfono no tiene código de país, asumimos Argentina (+54)
+      const wpPhone = cleanPhone.length <= 10 ? `54${cleanPhone}` : cleanPhone;
+
+      predioModalContent.innerHTML = `
+        <div class="flex items-center gap-3 mb-4">
+          <div class="p-3 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-xl">
+            <i data-feather="home" class="h-6 w-6"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white">${p.nombre}</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">${p.localidad}, Depto. ${p.depto} - ${p.provincia}</p>
+          </div>
+        </div>
+
+        <div class="space-y-4 text-xs text-slate-600 dark:text-slate-300">
+          
+          <!-- SUPERFICIES Y DATOS GENERALES -->
+          <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-3">
+            <div class="grid grid-cols-2 gap-3 pb-2 border-b border-slate-200/60 dark:border-slate-800">
+              <div class="p-2.5 bg-white dark:bg-slate-800 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
+                <span class="text-slate-400 block text-[10px] font-bold uppercase">Superficie Total</span>
+                <span class="font-extrabold text-sm text-sky-600 dark:text-sky-400">${p.sup_total.toLocaleString('es-AR')} ha</span>
+              </div>
+              <div class="p-2.5 bg-white dark:bg-slate-800 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
+                <span class="text-slate-400 block text-[10px] font-bold uppercase">Superficie Manejo</span>
+                <span class="font-extrabold text-sm text-emerald-600 dark:text-emerald-400">${p.sup_manejo.toLocaleString('es-AR')} ha</span>
+              </div>
+            </div>
+
+            <p><b>Titular(es):</b> ${p.titulares}</p>
+            <p><b>Plan de Manejo:</b> <span class="px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 font-semibold">${p.plan}</span></p>
+            <p><b>Límites Definidos:</b> ${p.limites.toUpperCase()} | <b>Polígono Disponible:</b> ${p.poligono.toUpperCase()}</p>
+          </div>
+
+          <!-- EXISTENCIAS GANADERAS -->
+          <div>
+            <h5 class="font-bold text-slate-800 dark:text-slate-100 mb-2 text-sm">Existencias Ganaderas</h5>
+            <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 text-center">
+              <div class="p-2 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
+                <span class="text-slate-400 block text-[10px]">BOVINOS</span>
+                <span class="font-bold text-sm text-slate-800 dark:text-white">${p.bovinos}</span>
+              </div>
+              <div class="p-2 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
+                <span class="text-slate-400 block text-[10px]">CAPRINOS</span>
+                <span class="font-bold text-sm text-slate-800 dark:text-white">${p.caprinos}</span>
+              </div>
+              <div class="p-2 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
+                <span class="text-slate-400 block text-[10px]">OVINOS</span>
+                <span class="font-bold text-sm text-slate-800 dark:text-white">${p.ovinos}</span>
+              </div>
+              <div class="p-2 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
+                <span class="text-slate-400 block text-[10px]">EQUINOS</span>
+                <span class="font-bold text-sm text-slate-800 dark:text-white">${p.equinos}</span>
+              </div>
+              <div class="p-2 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
+                <span class="text-slate-400 block text-[10px]">PORCINOS</span>
+                <span class="font-bold text-sm text-slate-800 dark:text-white">${p.porcinos}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TÉCNICO REFERENTE -->
+          <div>
+            <h5 class="font-bold text-slate-800 dark:text-slate-100 mb-2 text-sm">Técnico Referente</h5>
+            <div class="p-3 bg-sky-50 dark:bg-sky-950/30 rounded-xl border border-sky-100 dark:border-sky-900/40 space-y-1.5">
+              <p><b>Nombre:</b> ${p.tec}</p>
+              <p><b>Organización:</b> ${p.org}</p>
+              <p class="flex items-center gap-1.5">
+                <b>Teléfono:</b>
+                <a href="https://wa.me/${wpPhone}" target="_blank" class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold hover:underline">
+                  ${p.tel}
+                  <i data-feather="message-circle" class="h-3.5 w-3.5 text-emerald-500"></i>
+                </a>
+              </p>
+              <p><b>Email:</b> <a href="mailto:${p.email}" class="text-sky-600 dark:text-sky-400 underline">${p.email}</a></p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      predioModal.classList.remove('hidden');
+      feather.replace();
+    };
+
+    closePredioModalBtn.addEventListener('click', () => predioModal.classList.add('hidden'));
+    predioModal.addEventListener('click', (e) => {
+      if (e.target === predioModal) predioModal.classList.add('hidden');
+    });
+
+    inputSearch.addEventListener('input', renderDashboard);
+    filterProv.addEventListener('change', renderDashboard);
+    filterDepto.addEventListener('change', renderDashboard);
+
+    feather.replace();
+
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const darkIcon = document.getElementById('theme-toggle-dark-icon');
+    const lightIcon = document.getElementById('theme-toggle-light-icon');
+
+    if (document.documentElement.classList.contains('dark')) {
+      lightIcon.classList.remove('hidden');
+    } else {
+      darkIcon.classList.remove('hidden');
+    }
+
+    themeToggleBtn.addEventListener('click', function() {
+      darkIcon.classList.toggle('hidden');
+      lightIcon.classList.toggle('hidden');
+
+      if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+
+    const infoModalBtn = document.getElementById('info-modal-btn');
+    const infoModal = document.getElementById('info-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const confirmModalBtn = document.getElementById('confirm-modal-btn');
+
+    infoModalBtn.addEventListener('click', () => infoModal.classList.remove('hidden'));
+    closeModalBtn.addEventListener('click', () => infoModal.classList.add('hidden'));
+    confirmModalBtn.addEventListener('click', () => infoModal.classList.add('hidden'));
+    infoModal.addEventListener('click', (e) => {
+      if (e.target === infoModal) infoModal.classList.add('hidden');
+    });
+
+    document.addEventListener('DOMContentLoaded', cargarDatosDesdeExcel);
+  </script>
+</body>
+</html>
