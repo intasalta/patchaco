@@ -178,7 +178,7 @@
     <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/60 flex flex-col sm:flex-row gap-4 justify-between items-center">
       <div class="relative w-full sm:w-96">
         <i data-feather="search" class="absolute left-3.5 top-3 h-4 w-4 text-slate-400"></i>
-        <input type="text" id="input-search" placeholder="Buscar por predio o localidad..." class="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500">
+        <input type="text" id="input-search" placeholder="Buscar por predio, titular o localidad..." class="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500">
       </div>
 
       <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -188,11 +188,9 @@
           <option value="Jujuy">Jujuy</option>
         </select>
 
+        <!-- SELECTOR DINÁMICO DE DEPARTAMENTOS -->
         <select id="filter-departamento" class="text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500">
           <option value="">Todos los Departamentos</option>
-          <option value="Rivadavia">Rivadavia (Salta)</option>
-          <option value="Santa Barbara">Santa Bárbara (Jujuy)</option>
-          <option value="Dr. Manuel Belgrano">Dr. Manuel Belgrano (Jujuy)</option>
         </select>
       </div>
     </div>
@@ -305,20 +303,20 @@
   <script>
     // Datos de respaldo (fallback) en caso de que falle la carga remota del Excel
     let prediosData = [
-      {"id": 1, "nombre": "Los Hermanos Rojas Km79", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "bovinos": 8, "caprinos": 0, "ovinos": 0, "equinos": 2, "porcinos": 0, "sup_total": 20.0, "sup_manejo": 20.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.1089, "lng": -63.0672, "has_coords": true},
-      {"id": 2, "nombre": "Finca Las Vachichas", "localidad": "Palma Sola", "depto": "Santa Barbara", "provincia": "Jujuy", "bovinos": 200, "caprinos": 0, "ovinos": 0, "equinos": 0, "porcinos": 0, "sup_total": 2400.0, "sup_manejo": 2400.0, "plan": "Informal", "limites": "Sí", "poligono": "No", "tec": "José Augusto Echenique", "org": "INTA (EECT Yuto)", "tel": "3886856129", "email": "echenique.jose@inta.gob.ar", "lat": null, "lng": null, "has_coords": false},
-      {"id": 3, "nombre": "La Plateada", "localidad": "Juan Galán", "depto": "Dr. Manuel Belgrano", "provincia": "Jujuy", "bovinos": 100, "caprinos": 0, "ovinos": 0, "equinos": 0, "porcinos": 0, "sup_total": 300.0, "sup_manejo": 100.0, "plan": "Informal / formal", "limites": "si", "poligono": "", "tec": "Walter Setti", "org": "INTA", "tel": "3885725699", "email": "setti.walter@inta.gob.ar", "lat": null, "lng": null, "has_coords": false},
-      {"id": 4, "nombre": "Finca Agua Salada", "localidad": "Palma Sola", "depto": "Santa Barbara", "provincia": "Jujuy", "bovinos": 60, "caprinos": 0, "ovinos": 0, "equinos": 0, "porcinos": 0, "sup_total": 370.0, "sup_manejo": 370.0, "plan": "Informal", "limites": "Sí", "poligono": "No", "tec": "José Augusto Echenique", "org": "INTA (EECT Yuto)", "tel": "3886856129", "email": "echenique.jose@inta.gob.ar", "lat": null, "lng": null, "has_coords": false},
-      {"id": 5, "nombre": "SAN MANUEL", "localidad": "La Unión", "depto": "Rivadavia", "provincia": "Salta", "bovinos": 120, "caprinos": 200, "ovinos": 120, "equinos": 0, "porcinos": 50, "sup_total": 400.0, "sup_manejo": 400.0, "plan": "No", "limites": "Sí", "poligono": "no", "tec": "ROSSETTO ASTORGA CRISTINA BEATRIZ", "org": "INTA", "tel": "3878641984", "email": "rosetto.cristina@inta.gob.ar", "lat": null, "lng": null, "has_coords": false},
-      {"id": 6, "nombre": "El Pintao", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "bovinos": 50, "caprinos": 0, "ovinos": 0, "equinos": 0, "porcinos": 0, "sup_total": 560.0, "sup_manejo": 650.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0217, "lng": -63.0084, "has_coords": true},
-      {"id": 7, "nombre": "Don Genaro", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "bovinos": 60, "caprinos": 0, "ovinos": 0, "equinos": 4, "porcinos": 15, "sup_total": 900.0, "sup_manejo": 900.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0637, "lng": -63.0114, "has_coords": true},
-      {"id": 8, "nombre": "Las Flores", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "bovinos": 50, "caprinos": 8, "ovinos": 6, "equinos": 0, "porcinos": 0, "sup_total": 400.0, "sup_manejo": 400.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0682, "lng": -62.9738, "has_coords": true},
-      {"id": 9, "nombre": "Rincón del Tigre", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "bovinos": 80, "caprinos": 0, "ovinos": 35, "equinos": 0, "porcinos": 10, "sup_total": 720.0, "sup_manejo": 720.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0374, "lng": -62.966, "has_coords": true},
-      {"id": 10, "nombre": "Virgen del Carmen", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "bovinos": 60, "caprinos": 0, "ovinos": 45, "equinos": 0, "porcinos": 0, "sup_total": 900.0, "sup_manejo": 900.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0412, "lng": -63.0233, "has_coords": true},
-      {"id": 11, "nombre": "La Castaña", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "bovinos": 40, "caprinos": 0, "ovinos": 18, "equinos": 0, "porcinos": 0, "sup_total": 560.0, "sup_manejo": 560.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0746, "lng": -62.9935, "has_coords": true},
-      {"id": 12, "nombre": "La Esperanza", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "bovinos": 53, "caprinos": 27, "ovinos": 24, "equinos": 0, "porcinos": 8, "sup_total": 400.0, "sup_manejo": 400.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0825, "lng": -62.9689, "has_coords": true},
-      {"id": 13, "nombre": "San Expedito", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "bovinos": 70, "caprinos": 0, "ovinos": 0, "equinos": 0, "porcinos": 0, "sup_total": 560.0, "sup_manejo": 650.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0426, "lng": -63.0004, "has_coords": true},
-      {"id": 14, "nombre": "Virgen del Carmen", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "bovinos": 158, "caprinos": 0, "ovinos": 50, "equinos": 0, "porcinos": 0, "sup_total": 1050.0, "sup_manejo": 1050.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.05, "lng": -63.0652, "has_coords": true}
+      {"id": 1, "nombre": "Los Hermanos Rojas Km79", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Anibal Iginio Rojas", "bovinos": 8, "caprinos": 0, "ovinos": 0, "equinos": 2, "porcinos": 0, "sup_total": 20.0, "sup_manejo": 20.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.1089, "lng": -63.0672, "has_coords": true},
+      {"id": 2, "nombre": "Finca Las Vachichas", "localidad": "Palma Sola", "depto": "Santa Barbara", "provincia": "Jujuy", "titulares": "Carlos Antonio Ruiz", "bovinos": 200, "caprinos": 0, "ovinos": 0, "equinos": 0, "porcinos": 0, "sup_total": 2400.0, "sup_manejo": 2400.0, "plan": "Informal", "limites": "Sí", "poligono": "No", "tec": "José Augusto Echenique", "org": "INTA (EECT Yuto)", "tel": "3886856129", "email": "echenique.jose@inta.gob.ar", "lat": null, "lng": null, "has_coords": false},
+      {"id": 3, "nombre": "La Plateada", "localidad": "Juan Galán", "depto": "Dr. Manuel Belgrano", "provincia": "Jujuy", "titulares": "Pedro Colque, Eduardo y Natialia Yañez", "bovinos": 100, "caprinos": 0, "ovinos": 0, "equinos": 0, "porcinos": 0, "sup_total": 300.0, "sup_manejo": 100.0, "plan": "Informal / formal", "limites": "si", "poligono": "", "tec": "Walter Setti", "org": "INTA", "tel": "3885725699", "email": "setti.walter@inta.gob.ar", "lat": null, "lng": null, "has_coords": false},
+      {"id": 4, "nombre": "Finca Agua Salada", "localidad": "Palma Sola", "depto": "Santa Barbara", "provincia": "Jujuy", "titulares": "Rene Vallejos Rueda", "bovinos": 60, "caprinos": 0, "ovinos": 0, "equinos": 0, "porcinos": 0, "sup_total": 370.0, "sup_manejo": 370.0, "plan": "Informal", "limites": "Sí", "poligono": "No", "tec": "José Augusto Echenique", "org": "INTA (EECT Yuto)", "tel": "3886856129", "email": "echenique.jose@inta.gob.ar", "lat": null, "lng": null, "has_coords": false},
+      {"id": 5, "nombre": "SAN MANUEL", "localidad": "La Unión", "depto": "Rivadavia", "provincia": "Salta", "titulares": "JESUS CARABAJAL", "bovinos": 120, "caprinos": 200, "ovinos": 120, "equinos": 0, "porcinos": 50, "sup_total": 400.0, "sup_manejo": 400.0, "plan": "No", "limites": "Sí", "poligono": "no", "tec": "ROSSETTO ASTORGA CRISTINA BEATRIZ", "org": "INTA", "tel": "3878641984", "email": "rosetto.cristina@inta.gob.ar", "lat": null, "lng": null, "has_coords": false},
+      {"id": 6, "nombre": "El Pintao", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Crisanto Verón", "bovinos": 50, "caprinos": 0, "ovinos": 0, "equinos": 0, "porcinos": 0, "sup_total": 560.0, "sup_manejo": 650.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0217, "lng": -63.0084, "has_coords": true},
+      {"id": 7, "nombre": "Don Genaro", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Genaro Palomo (Juan Palomo)", "bovinos": 60, "caprinos": 0, "ovinos": 0, "equinos": 4, "porcinos": 15, "sup_total": 900.0, "sup_manejo": 900.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0637, "lng": -63.0114, "has_coords": true},
+      {"id": 8, "nombre": "Las Flores", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Javier Ceballos", "bovinos": 50, "caprinos": 8, "ovinos": 6, "equinos": 0, "porcinos": 0, "sup_total": 400.0, "sup_manejo": 400.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0682, "lng": -62.9738, "has_coords": true},
+      {"id": 9, "nombre": "Rincón del Tigre", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Jose Luis Ceballos", "bovinos": 80, "caprinos": 0, "ovinos": 35, "equinos": 0, "porcinos": 10, "sup_total": 720.0, "sup_manejo": 720.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0374, "lng": -62.966, "has_coords": true},
+      {"id": 10, "nombre": "Virgen del Carmen", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Luis José Ceballos", "bovinos": 60, "caprinos": 0, "ovinos": 45, "equinos": 0, "porcinos": 0, "sup_total": 900.0, "sup_manejo": 900.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0412, "lng": -63.0233, "has_coords": true},
+      {"id": 11, "nombre": "La Castaña", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Oscar Acevedo- Serafina Albornoz", "bovinos": 40, "caprinos": 0, "ovinos": 18, "equinos": 0, "porcinos": 0, "sup_total": 560.0, "sup_manejo": 560.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0746, "lng": -62.9935, "has_coords": true},
+      {"id": 12, "nombre": "La Esperanza", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Pablo Alcides Ceballos", "bovinos": 53, "caprinos": 27, "ovinos": 24, "equinos": 0, "porcinos": 8, "sup_total": 400.0, "sup_manejo": 400.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0825, "lng": -62.9689, "has_coords": true},
+      {"id": 13, "nombre": "San Expedito", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Susana Ceballos e Idel Ruiz", "bovinos": 70, "caprinos": 0, "ovinos": 0, "equinos": 0, "porcinos": 0, "sup_total": 560.0, "sup_manejo": 650.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.0426, "lng": -63.0004, "has_coords": true},
+      {"id": 14, "nombre": "Virgen del Carmen", "localidad": "Santa Victoria Este", "depto": "Rivadavia", "provincia": "Salta", "titulares": "Zaturnino Ceballos", "bovinos": 158, "caprinos": 0, "ovinos": 50, "equinos": 0, "porcinos": 0, "sup_total": 1050.0, "sup_manejo": 1050.0, "plan": "Formal", "limites": "si", "poligono": "si", "tec": "Jacqueline Bazzana", "org": "INTA", "tel": "3874155862", "email": "bazzana.jacqueline@inta.gob.ar", "lat": -22.05, "lng": -63.0652, "has_coords": true}
     ];
 
     async function cargarDatosDesdeExcel() {
@@ -342,6 +340,7 @@
             localidad: String(r.localidad || '').trim(),
             depto: String(r.departamento || '').trim(),
             provincia: String(r.provincia || '').trim(),
+            titulares: String(r.titulares || '').trim(),
             bovinos: parseInt(r.cant_bovinos) || 0,
             caprinos: parseInt(r.cant_caprinos) || 0,
             ovinos: parseInt(r.cant_ovinos) || 0,
@@ -364,6 +363,7 @@
       } catch (e) {
         console.warn("Aviso: Leyendo desde los datos de respaldo.", e);
       } finally {
+        actualizarOpcionesDepartamentos();
         renderDashboard();
       }
     }
@@ -419,6 +419,37 @@
     const filterProv = document.getElementById('filter-provincia');
     const filterDepto = document.getElementById('filter-departamento');
 
+    // --- FUNCIÓN PARA POBLAR EL SELECTOR DE DEPARTAMENTOS DINÁMICAMENTE ---
+    function actualizarOpcionesDepartamentos() {
+      const provVal = filterProv.value;
+      const deptoActual = filterDepto.value;
+
+      // Filtrar predios según la provincia elegida
+      const prediosFiltrados = provVal 
+        ? prediosData.filter(p => p.provincia === provVal)
+        : prediosData;
+
+      // Extraer departamentos únicos y ordenarlos
+      const deptosUnicos = [...new Set(
+        prediosFiltrados
+          .map(p => p.depto)
+          .filter(depto => depto && depto.trim() !== '')
+      )].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+
+      // Reconstruir las opciones del select
+      filterDepto.innerHTML = '<option value="">Todos los Departamentos</option>';
+      
+      deptosUnicos.forEach(depto => {
+        const option = document.createElement('option');
+        option.value = depto;
+        option.textContent = depto;
+        if (depto === deptoActual) {
+          option.selected = true;
+        }
+        filterDepto.appendChild(option);
+      });
+    }
+
     function renderDashboard() {
       const searchVal = inputSearch.value.toLowerCase().trim();
       const provVal = filterProv.value;
@@ -438,9 +469,10 @@
 
       const filtered = prediosData.filter(p => {
         const matchSearch = p.nombre.toLowerCase().includes(searchVal) ||
+                            p.titulares.toLowerCase().includes(searchVal) ||
                             p.localidad.toLowerCase().includes(searchVal);
         const matchProv = !provVal || p.provincia === provVal;
-        const matchDepto = !deptoVal || p.depto.toLowerCase().includes(deptoVal.toLowerCase());
+        const matchDepto = !deptoVal || p.depto.toLowerCase() === deptoVal.toLowerCase();
         return matchSearch && matchProv && matchDepto;
       });
 
@@ -459,6 +491,7 @@
             .bindPopup(`
               <div style="font-family: sans-serif; font-size: 12px; line-height: 1.4;">
                 <b style="font-size: 14px; color: #0284c7;">${p.nombre}</b><br>
+                <span><b>Titular:</b> ${p.titulares}</span><br>
                 <span><b>Localidad:</b> ${p.localidad} (${p.depto})</span><br>
                 <span><b>Sup. Manejo:</b> ${p.sup_manejo} ha</span><br>
                 <div style="margin-top: 4px; border-top: 1px solid #e2e8f0; pt-1">
@@ -483,6 +516,10 @@
                   ${p.has_coords ? 'Georeferenciado' : 'Sin mapa'}
                 </span>
               </div>
+
+              <p class="text-xs text-slate-600 dark:text-slate-300 font-medium mb-3">
+                <span class="text-slate-400">Titular:</span> ${p.titulares}
+              </p>
 
               <!-- GRILLA DE MÉTRICAS DE LA TARJETA (2 Filas: Sup y Ganadería) -->
               <div class="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 my-3 space-y-2">
@@ -584,6 +621,7 @@
               </div>
             </div>
 
+            <p><b>Titular(es):</b> ${p.titulares}</p>
             <p><b>Plan de Manejo:</b> <span class="px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 font-semibold">${p.plan}</span></p>
             <p><b>Límites Definidos:</b> ${p.limites.toUpperCase()} | <b>Polígono Disponible:</b> ${p.poligono.toUpperCase()}</p>
           </div>
@@ -644,7 +682,13 @@
     });
 
     inputSearch.addEventListener('input', renderDashboard);
-    filterProv.addEventListener('change', renderDashboard);
+
+    // Al cambiar provincia, recalculamos los departamentos disponibles
+    filterProv.addEventListener('change', () => {
+      actualizarOpcionesDepartamentos();
+      renderDashboard();
+    });
+
     filterDepto.addEventListener('change', renderDashboard);
 
     feather.replace();
