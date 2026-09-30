@@ -368,6 +368,7 @@
       } catch (e) {
         console.warn("Aviso: Leyendo desde los datos de respaldo.", e);
       } finally {
+        actualizarOpcionesProvincias();        
         actualizarOpcionesDepartamentos();
         renderDashboard();
       }
@@ -424,6 +425,31 @@
     const filterProv = document.getElementById('filter-provincia');
     const filterDepto = document.getElementById('filter-departamento');
 
+    // --- FUNCIÓN PARA POBLAR EL SELECTOR DE PROVINCIAS DINÁMICAMENTE ---
+    function actualizarOpcionesProvincias() {
+      const provActual = filterProv.value;
+    
+      // Extraer provincias únicas, normalizar espacios/puntos y ordenar
+      const provinciasUnicas = [...new Set(
+        prediosData
+          .map(p => p.provincia ? p.provincia.replace('.', '').trim() : '')
+          .filter(prov => prov !== '')
+      )].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+    
+      // Reconstruir las opciones del select
+      filterProv.innerHTML = '<option value="">Todas las Provincias</option>';
+      
+      provinciasUnicas.forEach(prov => {
+        const option = document.createElement('option');
+        option.value = prov;
+        option.textContent = prov;
+        if (prov === provActual) {
+          option.selected = true;
+        }
+        filterProv.appendChild(option);
+      });
+    }
+    
     // --- FUNCIÓN PARA POBLAR EL SELECTOR DE DEPARTAMENTOS DINÁMICAMENTE ---
     function actualizarOpcionesDepartamentos() {
       const provVal = filterProv.value;
