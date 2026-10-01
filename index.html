@@ -60,6 +60,45 @@
       font-size: 11px !important;
       padding: 8px 12px !important;
     }
+
+    /* Modo Pantalla Completa del Mapa */
+    .map-fullscreen-container {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 99999 !important;
+      border-radius: 0 !important;
+      padding: 16px !important;
+      background: rgba(15, 23, 42, 0.96) !important;
+      backdrop-filter: blur(8px) !important;
+      overflow-y: auto !important;
+    }
+    .map-fullscreen-container #map {
+      height: calc(100vh - 140px) !important;
+      border-radius: 0.75rem !important;
+    }
+
+    /* Estilos para impresión limpia (Ficha PDF) */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #print-modal-clone, #print-modal-clone * {
+        visibility: visible;
+      }
+      #print-modal-clone {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: #ffffff !important;
+        color: #0f172a !important;
+        padding: 24px !important;
+        font-family: 'Inter', sans-serif !important;
+      }
+    }
   </style>
 
   <script>
@@ -209,50 +248,128 @@
     </div>
 
     <!-- BUSCADOR Y FILTROS -->
-    <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/60 flex flex-col sm:flex-row gap-4 justify-between items-center">
-      <div class="relative w-full sm:w-96">
-        <i data-feather="search" class="absolute left-3.5 top-3 h-4 w-4 text-slate-400"></i>
-        <input type="text" id="input-search" placeholder="Buscar por predio, titular o localidad..." class="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500">
+    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/60 space-y-4">
+      
+      <!-- FILA 1: BUSCADOR PRINCIPAL (ANCHO COMPLETO Y DESTACADO) -->
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <i data-feather="search" class="h-4 w-4"></i>
+        </div>
+        <input type="text" id="input-search" placeholder="Buscar por nombre de predio, titular, localidad o técnico..." class="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all">
       </div>
 
-      <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+      <!-- FILA 2: SELECTORES ALINEADOS EN CUADRÍCULA UNIFORME (4 COLUMNAS IGUALES) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        
         <!-- SELECTOR DE ZONAS PATCHACO -->
-        <select id="filter-zona" class="text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold">
-          <option value="">Todas las Zonas</option>
-          <option value="1">Zona 1 (Chaco Occidental)</option>
-          <option value="2">Zona 2 (Chaco Húmedo / Oriental)</option>
-          <option value="3">Zona 3 (Chaco Central / Santiagueño)</option>
-          <option value="4">Zona 4 (Chaco Serrano / Transición)</option>
-          <option value="5">Zona 5 (Yungas - Chaco / Transición Pedemontana)</option>
-          <option value="6">Zona 6 (Chaco Cordobés)</option>
-        </select>
+        <div class="space-y-1.5">
+          <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <i data-feather="map" class="h-3 w-3 text-amber-500"></i>
+            <span>Zona PATChaco</span>
+          </label>
+          <select id="filter-zona" class="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium">
+            <option value="">Todas las Zonas</option>
+            <option value="1">Zona 1 (Chaco Occidental)</option>
+            <option value="2">Zona 2 (Chaco Húmedo / Oriental)</option>
+            <option value="3">Zona 3 (Chaco Central / Santiagueño)</option>
+            <option value="4">Zona 4 (Chaco Serrano / Transición)</option>
+            <option value="5">Zona 5 (Yungas - Chaco)</option>
+            <option value="6">Zona 6 (Chaco Cordobés)</option>
+          </select>
+        </div>
 
-        <select id="filter-provincia" class="text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500">
-          <option value="">Todas las Provincias</option>
-          <option value="Salta">Salta</option>
-          <option value="Jujuy">Jujuy</option>
-        </select>
+        <!-- SELECTOR DE PROVINCIAS -->
+        <div class="space-y-1.5">
+          <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <i data-feather="compass" class="h-3 w-3 text-sky-500"></i>
+            <span>Provincia</span>
+          </label>
+          <select id="filter-provincia" class="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium">
+            <option value="">Todas las Provincias</option>
+            <option value="Salta">Salta</option>
+            <option value="Jujuy">Jujuy</option>
+          </select>
+        </div>
 
         <!-- SELECTOR DINÁMICO DE DEPARTAMENTOS -->
-        <select id="filter-departamento" class="text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500">
-          <option value="">Todos los Departamentos</option>
-        </select>
+        <div class="space-y-1.5">
+          <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <i data-feather="navigation" class="h-3 w-3 text-emerald-500"></i>
+            <span>Departamento</span>
+          </label>
+          <select id="filter-departamento" class="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium">
+            <option value="">Todos los Departamentos</option>
+          </select>
+        </div>
+
+        <!-- SELECTOR DINÁMICO DE TÉCNICOS REFERENTES -->
+        <div class="space-y-1.5">
+          <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <i data-feather="user-check" class="h-3 w-3 text-purple-500"></i>
+            <span>Técnico Referente</span>
+          </label>
+          <select id="filter-tecnico" class="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium">
+            <option value="">Todos los Técnicos</option>
+          </select>
+        </div>
+
       </div>
+
+      <!-- FILA 3: ORDENAMIENTO Y ACCIONES (LIMPIAR FILTROS / EXPORTAR EXCEL) -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-700/60 text-xs">
+        
+        <!-- SELECTOR DE ORDENAMIENTO -->
+        <div class="flex items-center gap-2">
+          <span class="text-slate-400 font-semibold text-[11px] flex items-center gap-1.5">
+            <i data-feather="arrow-up-down" class="h-3.5 w-3.5 text-slate-400"></i>
+            <span>Ordenar por:</span>
+          </span>
+          <select id="sort-predios" class="text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium">
+            <option value="nombre-asc">Nombre (A - Z)</option>
+            <option value="nombre-desc">Nombre (Z - A)</option>
+            <option value="sup-desc">Mayor Sup. de Manejo</option>
+            <option value="sup-total-desc">Mayor Sup. Total</option>
+            <option value="bovinos-desc">Mayor cant. Bovinos</option>
+            <option value="caprinos-desc">Mayor cant. Caprinos</option>
+          </select>
+        </div>
+
+        <!-- BOTONES DE ACCIÓN: LIMPIAR Y EXPORTAR -->
+        <div class="flex items-center gap-2 self-end sm:self-auto">
+          <button id="btn-limpiar-filtros" onclick="limpiarFiltros()" title="Restablecer todos los filtros" class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/70 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 border border-slate-200/60 dark:border-slate-600/60 font-semibold flex items-center gap-1.5 transition-all text-xs">
+            <i data-feather="rotate-ccw" class="h-3.5 w-3.5 text-slate-500"></i>
+            <span>Limpiar filtros</span>
+          </button>
+
+          <button onclick="exportarExcel()" title="Descargar datos filtrados en formato Excel" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center gap-1.5 shadow-sm transition-all text-xs">
+            <i data-feather="download" class="h-3.5 w-3.5"></i>
+            <span>Exportar Excel</span>
+          </button>
+        </div>
+
+      </div>
+
     </div>
 
     <!-- SECCIÓN DE MAPA Y TARJETAS -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
       
       <!-- MAPA INTERACTIVO -->
-      <div class="lg:col-span-1 lg:sticky lg:top-24 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/60 flex flex-col justify-between">
+      <div id="container-mapa" class="lg:col-span-1 lg:sticky lg:top-24 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/60 flex flex-col justify-between transition-all duration-300">
         <div>
           <div class="flex items-center justify-between mb-3">
             <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2 text-sm sm:text-base">
               <i data-feather="map-pin" class="h-5 w-5 text-sky-500"></i> Ubicación Georeferenciada
             </h3>
-            <button onclick="reajustarVistaMapa()" title="Centrar mapa en la región" class="text-[11px] px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 flex items-center gap-1.5 transition-all font-medium border border-slate-200/50 dark:border-slate-600/50">
-              <i data-feather="maximize" class="h-3 w-3"></i> Centrar
-            </button>
+            <div class="flex items-center gap-1.5">
+              <button onclick="reajustarVistaMapa()" title="Centrar mapa en la región" class="text-[11px] px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 flex items-center gap-1.5 transition-all font-medium border border-slate-200/50 dark:border-slate-600/50">
+                <i data-feather="crosshair" class="h-3 w-3"></i> Centrar
+              </button>
+              <button id="btn-fullscreen-mapa" onclick="togglePantallaCompletaMapa()" title="Expandir mapa a pantalla completa" class="text-[11px] px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 flex items-center gap-1.5 transition-all font-medium border border-slate-200/50 dark:border-slate-600/50">
+                <i id="icon-fullscreen-mapa" data-feather="maximize-2" class="h-3 w-3"></i>
+                <span id="text-fullscreen-mapa">Ampliar</span>
+              </button>
+            </div>
           </div>
           <div id="map"></div>
         </div>
@@ -503,6 +620,7 @@
       } finally {
         actualizarOpcionesProvincias();        
         actualizarOpcionesDepartamentos();
+        actualizarOpcionesTecnicos();
         renderDashboard();
       }
     }
@@ -688,6 +806,9 @@
     const filterZona = document.getElementById('filter-zona');
     const filterProv = document.getElementById('filter-provincia');
     const filterDepto = document.getElementById('filter-departamento');
+    const filterTecnico = document.getElementById('filter-tecnico');
+    const sortPredios = document.getElementById('sort-predios');
+    const btnLimpiarFiltros = document.getElementById('btn-limpiar-filtros');
     const badgeContador = document.getElementById('badge-contador-fichas');
 
     // Estado de fichas abiertas (acordeón interactivo)
@@ -757,6 +878,7 @@
       } else {
         filterZona.value = String(zonaNum);
       }
+      actualizarOpcionesTecnicos();
       renderDashboard();
     };
 
@@ -768,6 +890,38 @@
         map.fitBounds(layerZonas.getBounds(), { padding: [20, 20] });
       }
     };
+
+    // Modo Pantalla Completa para el mapa interactivo
+    window.togglePantallaCompletaMapa = function() {
+      const container = document.getElementById('container-mapa');
+      const icon = document.getElementById('icon-fullscreen-mapa');
+      const text = document.getElementById('text-fullscreen-mapa');
+      if (!container) return;
+
+      const isFullscreen = container.classList.toggle('map-fullscreen-container');
+      if (isFullscreen) {
+        if (text) text.innerText = 'Reducir';
+        if (icon) icon.setAttribute('data-feather', 'minimize-2');
+      } else {
+        if (text) text.innerText = 'Ampliar';
+        if (icon) icon.setAttribute('data-feather', 'maximize-2');
+      }
+      feather.replace();
+      setTimeout(() => {
+        map.invalidateSize();
+        reajustarVistaMapa();
+      }, 200);
+    };
+
+    // Salir de pantalla completa con la tecla Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const container = document.getElementById('container-mapa');
+        if (container && container.classList.contains('map-fullscreen-container')) {
+          togglePantallaCompletaMapa();
+        }
+      }
+    });
 
     // --- FUNCIÓN PARA POBLAR EL SELECTOR DE PROVINCIAS DINÁMICAMENTE ---
     function actualizarOpcionesProvincias() {
@@ -825,11 +979,106 @@
       });
     }
 
+    // --- FUNCIÓN PARA POBLAR EL SELECTOR DE TÉCNICOS DINÁMICAMENTE ---
+    function actualizarOpcionesTecnicos() {
+      if (!filterTecnico) return;
+      const tecActual = filterTecnico.value;
+      const provVal = filterProv ? filterProv.value : '';
+      const zonaVal = filterZona ? filterZona.value : '';
+
+      // Filtrar predios según provincia y zona actual para relevancia
+      const prediosFiltrados = prediosData.filter(p => {
+        const matchProv = !provVal || p.provincia === provVal;
+        const matchZona = !zonaVal || String(p.zona) === String(zonaVal);
+        return matchProv && matchZona;
+      });
+
+      const tecnicosUnicos = [...new Set(
+        prediosFiltrados
+          .map(p => (p.tec || '').trim())
+          .filter(tec => tec !== '')
+      )].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+
+      filterTecnico.innerHTML = '<option value="">Todos los Técnicos</option>';
+      tecnicosUnicos.forEach(tec => {
+        const option = document.createElement('option');
+        option.value = tec;
+        option.textContent = tec;
+        if (tec === tecActual) {
+          option.selected = true;
+        }
+        filterTecnico.appendChild(option);
+      });
+    }
+
+    // --- LIMPIAR TODOS LOS FILTROS ---
+    window.limpiarFiltros = function() {
+      if (inputSearch) inputSearch.value = '';
+      if (filterZona) filterZona.value = '';
+      if (filterProv) filterProv.value = '';
+      if (filterDepto) filterDepto.value = '';
+      if (filterTecnico) filterTecnico.value = '';
+      if (sortPredios) sortPredios.value = 'nombre-asc';
+
+      actualizarOpcionesDepartamentos();
+      actualizarOpcionesTecnicos();
+      renderDashboard();
+      reajustarVistaMapa();
+    };
+
+    // --- EXPORTAR SELECCIÓN A EXCEL (.XLSX) ---
+    window.exportarExcel = function() {
+      const datosParaExportar = (window.currentFilteredPredios && window.currentFilteredPredios.length > 0)
+        ? window.currentFilteredPredios
+        : prediosData;
+
+      if (!datosParaExportar || datosParaExportar.length === 0) {
+        alert("No hay registros para exportar con los filtros seleccionados.");
+        return;
+      }
+
+      const rows = datosParaExportar.map(p => ({
+        "Código": p.id,
+        "Nombre de Unidad": p.nombre,
+        "Titular(es)": p.titulares,
+        "Provincia": p.provincia,
+        "Departamento": p.depto,
+        "Localidad": p.localidad,
+        "Zona PATChaco": p.zona,
+        "Sup. Manejo (ha)": p.sup_manejo,
+        "Sup. Total (ha)": p.sup_total,
+        "Bovinos": p.bovinos,
+        "Caprinos": p.caprinos,
+        "Ovinos": p.ovinos,
+        "Equinos": p.equinos,
+        "Porcinos": p.porcinos,
+        "Plan de Manejo": p.plan,
+        "Límites Definidos": p.limites,
+        "Polígono": p.poligono,
+        "Técnico Referente": p.tec,
+        "Organización Técnica": p.org,
+        "Teléfono": p.tel,
+        "Email": p.email,
+        "Latitud": p.lat !== null ? p.lat : '',
+        "Longitud": p.lng !== null ? p.lng : '',
+        "Georeferenciado": p.has_coords ? 'SÍ' : 'NO'
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Relevamientos");
+
+      const fecha = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(workbook, `INTA_PATChaco_Relevamientos_${fecha}.xlsx`);
+    };
+
     function renderDashboard() {
       const searchVal = inputSearch.value.toLowerCase().trim();
       const zonaVal = filterZona ? filterZona.value : '';
       const provVal = filterProv.value;
       const deptoVal = filterDepto.value;
+      const tecVal = filterTecnico ? filterTecnico.value.toLowerCase().trim() : '';
+      const sortVal = sortPredios ? sortPredios.value : 'nombre-asc';
 
       grid.innerHTML = '';
       markersGroup.clearLayers();
@@ -844,16 +1093,51 @@
       let totalEquinos = 0;
       let countGeoref = 0;
 
-      // Filtrado conjunto: búsqueda + zona + provincia + departamento
-      const filtered = prediosData.filter(p => {
+      // Filtrado conjunto: búsqueda + zona + provincia + departamento + técnico
+      let filtered = prediosData.filter(p => {
         const matchSearch = p.nombre.toLowerCase().includes(searchVal) ||
                             p.titulares.toLowerCase().includes(searchVal) ||
                             p.localidad.toLowerCase().includes(searchVal);
         const matchZona = !zonaVal || String(p.zona) === String(zonaVal);
         const matchProv = !provVal || p.provincia === provVal;
         const matchDepto = !deptoVal || p.depto.toLowerCase() === deptoVal.toLowerCase();
-        return matchSearch && matchZona && matchProv && matchDepto;
+        const matchTec = !tecVal || (p.tec && p.tec.toLowerCase() === tecVal);
+        return matchSearch && matchZona && matchProv && matchDepto && matchTec;
       });
+
+      // Ordenamiento dinámico
+      filtered.sort((a, b) => {
+        switch (sortVal) {
+          case 'nombre-desc':
+            return b.nombre.localeCompare(a.nombre, 'es', { sensitivity: 'base' });
+          case 'sup-desc':
+            return b.sup_manejo - a.sup_manejo;
+          case 'sup-total-desc':
+            return b.sup_total - a.sup_total;
+          case 'bovinos-desc':
+            return b.bovinos - a.bovinos;
+          case 'caprinos-desc':
+            return b.caprinos - a.caprinos;
+          case 'nombre-asc':
+          default:
+            return a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
+        }
+      });
+
+      // Guardar lista filtrada en variable global para exportar a Excel
+      window.currentFilteredPredios = filtered;
+
+      // Actualizar estado del botón "Limpiar filtros"
+      const hayFiltrosActivos = Boolean(searchVal || zonaVal || provVal || deptoVal || tecVal || (sortVal && sortVal !== 'nombre-asc'));
+      if (btnLimpiarFiltros) {
+        if (hayFiltrosActivos) {
+          btnLimpiarFiltros.classList.add('bg-amber-100', 'text-amber-800', 'border-amber-300', 'dark:bg-amber-900/40', 'dark:text-amber-200', 'dark:border-amber-600', 'shadow-sm');
+          btnLimpiarFiltros.classList.remove('bg-slate-100', 'text-slate-600', 'border-slate-200/60', 'dark:bg-slate-700/70', 'dark:text-slate-200');
+        } else {
+          btnLimpiarFiltros.classList.remove('bg-amber-100', 'text-amber-800', 'border-amber-300', 'dark:bg-amber-900/40', 'dark:text-amber-200', 'dark:border-amber-600', 'shadow-sm');
+          btnLimpiarFiltros.classList.add('bg-slate-100', 'text-slate-600', 'border-slate-200/60', 'dark:bg-slate-700/70', 'dark:text-slate-200');
+        }
+      }
 
       // Actualizar el estilo de la capa de zonas según el filtro seleccionado
       if (layerZonas) {
@@ -1070,14 +1354,20 @@
       const wpPhone = cleanPhone.length <= 10 ? `54${cleanPhone}` : cleanPhone;
 
       predioModalContent.innerHTML = `
-        <div class="flex items-center gap-3 mb-4">
-          <div class="p-3 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-xl">
-            <i data-feather="home" class="h-6 w-6"></i>
+        <div class="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60 pr-8">
+          <div class="flex items-center gap-3">
+            <div class="p-3 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-xl">
+              <i data-feather="home" class="h-6 w-6"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-slate-900 dark:text-white">${p.nombre}</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">${p.localidad}, Depto. ${p.depto} - ${p.provincia}</p>
+            </div>
           </div>
-          <div>
-            <h3 class="text-xl font-bold text-slate-900 dark:text-white">${p.nombre}</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">${p.localidad}, Depto. ${p.depto} - ${p.provincia}</p>
-          </div>
+          <button onclick="imprimirFichaActual()" title="Imprimir ficha o guardar como PDF" class="no-print hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-600 transition-all">
+            <i data-feather="printer" class="h-3.5 w-3.5 text-sky-500"></i>
+            <span>Imprimir PDF</span>
+          </button>
         </div>
 
         <div class="space-y-4 text-xs text-slate-600 dark:text-slate-300">
@@ -1095,9 +1385,13 @@
               </div>
             </div>
 
-            <p><b>Titular(es):</b> ${p.titulares}</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <p><b>Titular(es):</b> ${p.titulares}</p>
+              <p><b>Zona PATChaco:</b> <span class="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold">Zona ${p.zona || 1}</span></p>
+            </div>
             <p><b>Plan de Manejo:</b> <span class="px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 font-semibold">${p.plan}</span></p>
             <p><b>Límites Definidos:</b> ${p.limites.toUpperCase()} | <b>Polígono Disponible:</b> ${p.poligono.toUpperCase()}</p>
+            ${p.has_coords ? `<p><b>Coordenadas:</b> Lat ${p.lat.toFixed(4)}, Long ${p.lng.toFixed(4)}</p>` : '<p class="text-amber-600 dark:text-amber-400"><i>Unidad sin coordenadas georeferenciadas cargadas</i></p>'}
           </div>
 
           <!-- EXISTENCIAS GANADERAS -->
@@ -1144,10 +1438,55 @@
             </div>
           </div>
         </div>
+
+        <!-- ACCIONES EN EL PIE DEL MODAL -->
+        <div class="no-print mt-6 pt-4 border-t border-slate-100 dark:border-slate-700/60 flex flex-wrap items-center justify-between gap-3">
+          <button onclick="imprimirFichaActual()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all">
+            <i data-feather="printer" class="h-3.5 w-3.5 text-sky-500"></i>
+            <span>Imprimir / Guardar PDF</span>
+          </button>
+          <button onclick="document.getElementById('predio-modal').classList.add('hidden')" class="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-xl transition-all">
+            Cerrar Ficha
+          </button>
+        </div>
       `;
 
       predioModal.classList.remove('hidden');
       feather.replace();
+    };
+
+    // Función para imprimir ficha técnica limpia
+    window.imprimirFichaActual = function() {
+      const modalContent = document.getElementById('predio-modal-content');
+      if (!modalContent) return;
+
+      let printArea = document.getElementById('print-modal-clone');
+      if (!printArea) {
+        printArea = document.createElement('div');
+        printArea.id = 'print-modal-clone';
+        document.body.appendChild(printArea);
+      }
+
+      printArea.innerHTML = `
+        <div style="border-bottom: 2px solid #0B7BAF; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="font-size: 26px;">🐮</div>
+            <div>
+              <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin: 0;">INTA - Consolidado de Relevamientos Prediales PATChaco</h2>
+              <p style="font-size: 11px; color: #64748b; margin: 2px 0 0 0;">Ficha Técnica Individual de Relevamiento Territorial</p>
+            </div>
+          </div>
+          <div style="text-align: right; font-size: 11px; color: #64748b;">
+            <span>Fecha: ${new Date().toLocaleDateString('es-AR')}</span>
+          </div>
+        </div>
+        ${modalContent.innerHTML}
+        <div style="margin-top: 28px; padding-top: 10px; border-top: 1px solid #cbd5e1; font-size: 10px; color: #64748b; text-align: center;">
+          INTA Centro Regional Salta-Jujuy • Proyecto PATChaco • Documento de consulta predial
+        </div>
+      `;
+
+      window.print();
     };
 
     closePredioModalBtn.addEventListener('click', () => predioModal.classList.add('hidden'));
@@ -1156,15 +1495,21 @@
     });
 
     inputSearch.addEventListener('input', renderDashboard);
-    filterZona.addEventListener('change', renderDashboard);
+    filterZona.addEventListener('change', () => {
+      actualizarOpcionesTecnicos();
+      renderDashboard();
+    });
 
-    // Al cambiar provincia, recalculamos los departamentos disponibles
+    // Al cambiar provincia, recalculamos los departamentos y técnicos disponibles
     filterProv.addEventListener('change', () => {
       actualizarOpcionesDepartamentos();
+      actualizarOpcionesTecnicos();
       renderDashboard();
     });
 
     filterDepto.addEventListener('change', renderDashboard);
+    if (filterTecnico) filterTecnico.addEventListener('change', renderDashboard);
+    if (sortPredios) sortPredios.addEventListener('change', renderDashboard);
 
     feather.replace();
 
