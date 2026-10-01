@@ -19,6 +19,9 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- Capas geográficas de Provincias y Zonas PATChaco (GeoJSON optimizado) -->
+  <script src="./capas_geograficas.js"></script>
+
   <!-- SheetJS para lectura dinámica del archivo Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
@@ -26,7 +29,37 @@
   
   <style>
     body { font-family: 'Inter', sans-serif; }
-    #map { height: 420px; width: 100%; border-radius: 1rem; z-index: 10; }
+    #map { height: 460px; width: 100%; border-radius: 1rem; z-index: 10; }
+    
+    /* Popups y tooltips estilizados */
+    .leaflet-popup-content-wrapper {
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.1);
+      font-family: 'Inter', sans-serif;
+    }
+    .leaflet-popup-content { margin: 12px 14px; }
+    .custom-leaflet-tooltip {
+      background: rgba(15, 23, 42, 0.90);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 5px 9px;
+      font-size: 11px;
+      font-family: 'Inter', sans-serif;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      backdrop-filter: blur(4px);
+    }
+    .custom-leaflet-tooltip::before { border-top-color: rgba(15, 23, 42, 0.90) !important; }
+    
+    /* Control de capas de Leaflet estilizado */
+    .leaflet-control-layers {
+      border-radius: 0.75rem !important;
+      border: 1px solid rgba(148, 163, 184, 0.25) !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12) !important;
+      font-family: 'Inter', sans-serif !important;
+      font-size: 11px !important;
+      padding: 8px 12px !important;
+    }
   </style>
 
   <script>
@@ -202,28 +235,93 @@
       <!-- MAPA INTERACTIVO -->
       <div class="lg:col-span-1 lg:sticky lg:top-24 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/60 flex flex-col justify-between">
         <div>
-          <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2 mb-3">
-            <i data-feather="map-pin" class="h-5 w-5 text-sky-500"></i> Ubicación Georeferenciada
-          </h3>
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2 text-sm sm:text-base">
+              <i data-feather="map-pin" class="h-5 w-5 text-sky-500"></i> Ubicación Georeferenciada
+            </h3>
+            <button onclick="reajustarVistaMapa()" title="Centrar mapa en la región" class="text-[11px] px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 flex items-center gap-1.5 transition-all font-medium border border-slate-200/50 dark:border-slate-600/50">
+              <i data-feather="maximize" class="h-3 w-3"></i> Centrar
+            </button>
+          </div>
           <div id="map"></div>
         </div>
-        <div class="mt-3 text-[11px] text-slate-400 space-y-1">
-          <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
-            <span>Verde: Marcador georeferenciado.</span>
+
+        <!-- LEYENDA INTERACTIVA DE ZONAS -->
+        <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/60 space-y-2">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Zonas PATChaco</span>
+            <span class="text-[10px] text-slate-400 font-medium">Clic para explorar</span>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
-            <span>Naranja: Sin coordenadas en ficha.</span>
+
+          <div class="grid grid-cols-3 gap-1.5 text-[10px]">
+            <button onclick="filtrarOEnfocarZona(1)" title="Ver Zona 1 (Bermejo / Pilcomayo)" class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold border border-amber-500/20 transition-all text-left truncate">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block flex-shrink-0"></span>
+              <span class="truncate">Zona 1</span>
+            </button>
+            <button onclick="filtrarOEnfocarZona(2)" title="Ver Zona 2 (Chaco Húmedo / Oriental)" class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-500/20 transition-all text-left truncate">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block flex-shrink-0"></span>
+              <span class="truncate">Zona 2</span>
+            </button>
+            <button onclick="filtrarOEnfocarZona(3)" title="Ver Zona 3 (Chaco Central / Santiagueño)" class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 font-semibold border border-purple-500/20 transition-all text-left truncate">
+              <span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block flex-shrink-0"></span>
+              <span class="truncate">Zona 3</span>
+            </button>
+            <button onclick="filtrarOEnfocarZona(4)" title="Ver Zona 4 (Chaco Serrano / Transición)" class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-semibold border border-rose-500/20 transition-all text-left truncate">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block flex-shrink-0"></span>
+              <span class="truncate">Zona 4</span>
+            </button>
+            <button onclick="filtrarOEnfocarZona(5)" title="Ver Zona 5 (Yungas y Valles Salta-Jujuy)" class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 font-semibold border border-cyan-500/20 transition-all text-left truncate">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block flex-shrink-0"></span>
+              <span class="truncate">Zona 5</span>
+            </button>
+            <button onclick="filtrarOEnfocarZona(6)" title="Ver Zona 6 (Chaco Cordobés)" class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-pink-500/10 hover:bg-pink-500/20 text-pink-700 dark:text-pink-300 font-semibold border border-pink-500/20 transition-all text-left truncate">
+              <span class="w-2.5 h-2.5 rounded-full bg-pink-500 inline-block flex-shrink-0"></span>
+              <span class="truncate">Zona 6</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- LEYENDA DE MARCADORES Y PROVINCIAS -->
+        <div class="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/60 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500 dark:text-slate-400">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+            <span>Georeferenciado</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+            <span>Sin coordenadas</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3.5 h-0.5 border-t-2 border-dashed border-sky-400 inline-block"></span>
+            <span>Límites Prov.</span>
           </div>
         </div>
       </div>
 
       <!-- GRILLA DE PREDIOS -->
       <div class="lg:col-span-2 space-y-4">
-        <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-          <i data-feather="home" class="h-5 w-5 text-emerald-500"></i> Unidades de Manejo Relevadas
-        </h3>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+          <div class="flex items-center gap-2.5">
+            <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2 text-base">
+              <i data-feather="home" class="h-5 w-5 text-emerald-500"></i> Unidades de Manejo Relevadas
+            </h3>
+            <span id="badge-contador-fichas" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold border border-slate-200/50 dark:border-slate-600/50">
+              0
+            </span>
+          </div>
+
+          <!-- BOTONES DE EXPANDIR / COLAPSAR TODAS -->
+          <div class="flex items-center gap-2">
+            <button onclick="expandirTodasFichas()" class="text-xs px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm font-semibold flex items-center gap-1.5 transition-all">
+              <i data-feather="chevrons-down" class="h-3.5 w-3.5 text-sky-500"></i>
+              <span>Expandir todas</span>
+            </button>
+            <button onclick="colapsarTodasFichas()" class="text-xs px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm font-semibold flex items-center gap-1.5 transition-all">
+              <i data-feather="chevrons-up" class="h-3.5 w-3.5 text-slate-400"></i>
+              <span>Colapsar todas</span>
+            </button>
+          </div>
+        </div>
 
         <div id="grid-predios" class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4">
           <!-- Tarjetas dinámicas -->
@@ -403,27 +501,247 @@
 
     // Inicialización del mapa con Google Satelital como capa por defecto
     const map = L.map('map', {
-      center: [-22.5, -63.5],
-      zoom: 7,
+      center: [-24.5, -63.5],
+      zoom: 6,
       layers: [googleSat]
     });
 
-    // Diccionario de capas para el selector interactivo
+    // Diccionario de mapas base
     const baseMaps = {
       "Google Satelital": googleSat,
       "OpenStreetMap": osm,
       "Argenmap (IGN)": argenmap
     };
 
-    // Agregar selector de capas arriba a la derecha
-    L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
+    // Paleta cromática armoniosa y semitransparente para las 6 zonas de PATChaco
+    const COLORES_ZONAS = {
+      1: { fill: '#f59e0b', stroke: '#d97706', nombre: 'Zona 1 (Bermejo / Pilcomayo)' },
+      2: { fill: '#10b981', stroke: '#059669', nombre: 'Zona 2 (Chaco Húmedo / Oriental)' },
+      3: { fill: '#8b5cf6', stroke: '#7c3aed', nombre: 'Zona 3 (Chaco Central / Santiagueño)' },
+      4: { fill: '#ef4444', stroke: '#dc2626', nombre: 'Zona 4 (Chaco Serrano / Transición)' },
+      5: { fill: '#06b6d4', stroke: '#0284c7', nombre: 'Zona 5 (Yungas y Valles Salta-Jujuy)' },
+      6: { fill: '#ec4899', stroke: '#c026d3', nombre: 'Zona 6 (Chaco Cordobés)' }
+    };
 
-    const markersGroup = L.featureGroup().addTo(map);
+    // Capa de Zonas PATChaco con transparencia calibrada para imagen satelital
+    let layerZonas = L.geoJSON(typeof GEOJSON_ZONAS !== 'undefined' ? GEOJSON_ZONAS : null, {
+      style: function(feature) {
+        const z = feature.properties ? (feature.properties.zona || 1) : 1;
+        const cfg = COLORES_ZONAS[z] || { fill: '#38bdf8', stroke: '#0284c7' };
+        return {
+          fillColor: cfg.fill,
+          fillOpacity: 0.22, // Semitransparente: permite ver la foto satelital nítida
+          color: cfg.stroke,
+          weight: 1.3,
+          opacity: 0.85
+        };
+      },
+      onEachFeature: function(feature, layer) {
+        const props = feature.properties || {};
+        const z = props.zona || 1;
+        const cfg = COLORES_ZONAS[z] || { fill: '#38bdf8', stroke: '#0284c7', nombre: 'Zona ' + z };
+        const nombreDepto = props.nam || props.fna || 'Departamento';
+        const prov = props.provincia ? ` (${props.provincia})` : '';
+
+        // Tooltip interactivo al posar el cursor
+        layer.bindTooltip(`
+          <div class="leading-tight">
+            <span class="font-bold text-white text-[12px]">${nombreDepto}</span><span class="text-slate-300 text-[11px]">${prov}</span><br>
+            <span style="color: ${cfg.fill};" class="font-semibold text-[10px]">● ${cfg.nombre || 'Zona ' + z}</span>
+          </div>
+        `, { sticky: true, className: 'custom-leaflet-tooltip' });
+
+        layer.on({
+          mouseover: function(e) {
+            const l = e.target;
+            l.setStyle({
+              fillOpacity: 0.45,
+              weight: 2.4,
+              color: '#ffffff'
+            });
+            l.bringToFront();
+            if (markersGroup) markersGroup.bringToFront();
+          },
+          mouseout: function(e) {
+            layerZonas.resetStyle(e.target);
+          },
+          click: function(e) {
+            // Popup informativo con detalle de la zona y predios en este departamento
+            const deptoBuscado = (props.nam || '').toLowerCase().trim();
+            const prediosEnDepto = prediosData.filter(p => {
+              const d = (p.depto || '').toLowerCase().trim();
+              const l = (p.localidad || '').toLowerCase().trim();
+              return d.includes(deptoBuscado) || deptoBuscado.includes(d) || l.includes(deptoBuscado);
+            });
+
+            let popupContent = `
+              <div style="font-family: 'Inter', sans-serif; min-width: 190px;">
+                <div style="border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px;">
+                  <h4 style="font-weight: 800; font-size: 13px; color: #0f172a; margin: 0;">${nombreDepto}</h4>
+                  ${props.provincia ? `<span style="font-size: 11px; color: #64748b;">Provincia de ${props.provincia}</span>` : ''}
+                </div>
+                <div style="margin-bottom: 6px;">
+                  <span style="background: ${cfg.fill}22; color: ${cfg.stroke}; border: 1px solid ${cfg.fill}44; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 6px;">
+                    ● ${cfg.nombre || 'Zona ' + z}
+                  </span>
+                </div>
+                <div style="font-size: 11px; color: #334155;">
+                  <b>Predios en consolidado:</b> ${prediosEnDepto.length}
+                </div>
+                ${prediosEnDepto.length > 0 ? `
+                  <div style="margin-top: 6px; font-size: 10px; max-height: 80px; overflow-y: auto; background: #f8fafc; padding: 4px 6px; border-radius: 6px;">
+                    ${prediosEnDepto.map(p => `• <b>${p.nombre}</b> (${p.sup_manejo} ha)`).join('<br>')}
+                  </div>
+                ` : ''}
+              </div>
+            `;
+            layer.bindPopup(popupContent).openPopup(e.latlng);
+          }
+        });
+      }
+    });
+
+    // Capa de Límites Provinciales con jerarquía sutil (línea discontinua y relleno transparente)
+    let layerProvincias = L.geoJSON(typeof GEOJSON_PROVINCIAS !== 'undefined' ? GEOJSON_PROVINCIAS : null, {
+      style: {
+        color: '#e0f2fe',
+        weight: 2,
+        opacity: 0.95,
+        dashArray: '5, 5', // Línea discontinua de contorno institucional
+        fillColor: '#0284c7',
+        fillOpacity: 0.04 // Casi transparente para no tapar el satélite ni las zonas
+      },
+      onEachFeature: function(feature, layer) {
+        const props = feature.properties || {};
+        const nombreProv = props.nam || props.fna || 'Provincia';
+        layer.bindTooltip(`
+          <div class="font-bold text-white text-[12px] flex items-center gap-1">
+            <span>🏛️</span> <span>Provincia de ${nombreProv}</span>
+          </div>
+        `, { sticky: true, className: 'custom-leaflet-tooltip' });
+
+        layer.on({
+          mouseover: function(e) {
+            e.target.setStyle({ weight: 3, opacity: 1, color: '#38bdf8' });
+          },
+          mouseout: function(e) {
+            layerProvincias.resetStyle(e.target);
+          }
+        });
+      }
+    });
+
+    // Grupo de marcadores de predios
+    const markersGroup = L.featureGroup();
+    const markersById = {}; // Diccionario para abrir marcador por ID de predio
+
+    // Agregar capas por defecto al mapa
+    layerZonas.addTo(map);
+    layerProvincias.addTo(map);
+    markersGroup.addTo(map);
+
+    // Selector de capas interactivo (esquina superior derecha)
+    const overlayMaps = {
+      "📍 Predios Relevados": markersGroup,
+      "🗺️ Zonas PATChaco (1 a 6)": layerZonas,
+      "🏛️ Límites Provinciales": layerProvincias
+    };
+    L.control.layers(baseMaps, overlayMaps, { position: 'topright', collapsed: true }).addTo(map);
 
     const grid = document.getElementById('grid-predios');
     const inputSearch = document.getElementById('input-search');
     const filterProv = document.getElementById('filter-provincia');
     const filterDepto = document.getElementById('filter-departamento');
+    const badgeContador = document.getElementById('badge-contador-fichas');
+
+    // Estado de fichas abiertas (acordeón interactivo)
+    const fichasAbiertas = new Set();
+
+    // Toggle individual de una ficha
+    window.togglePredioCard = function(id) {
+      const body = document.getElementById(`body-predio-${id}`);
+      const chevron = document.getElementById(`chevron-predio-${id}`);
+      const card = document.getElementById(`card-predio-${id}`);
+      if (!body) return;
+
+      if (body.classList.contains('hidden')) {
+        body.classList.remove('hidden');
+        if (chevron) chevron.classList.add('rotate-180');
+        if (card) card.classList.add('ring-2', 'ring-sky-500/30', 'border-sky-500/40');
+        fichasAbiertas.add(id);
+      } else {
+        body.classList.add('hidden');
+        if (chevron) chevron.classList.remove('rotate-180');
+        if (card) card.classList.remove('ring-2', 'ring-sky-500/30', 'border-sky-500/40');
+        fichasAbiertas.delete(id);
+      }
+    };
+
+    // Expandir todas las fichas visibles
+    window.expandirTodasFichas = function() {
+      document.querySelectorAll('[id^="body-predio-"]').forEach(el => {
+        el.classList.remove('hidden');
+        const id = parseInt(el.id.replace('body-predio-', ''));
+        if (!isNaN(id)) fichasAbiertas.add(id);
+      });
+      document.querySelectorAll('[id^="chevron-predio-"]').forEach(el => el.classList.add('rotate-180'));
+      document.querySelectorAll('[id^="card-predio-"]').forEach(el => el.classList.add('ring-2', 'ring-sky-500/30', 'border-sky-500/40'));
+    };
+
+    // Colapsar todas las fichas visibles
+    window.colapsarTodasFichas = function() {
+      document.querySelectorAll('[id^="body-predio-"]').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('[id^="chevron-predio-"]').forEach(el => el.classList.remove('rotate-180'));
+      document.querySelectorAll('[id^="card-predio-"]').forEach(el => el.classList.remove('ring-2', 'ring-sky-500/30', 'border-sky-500/40'));
+      fichasAbiertas.clear();
+    };
+
+    // Centrar y enfocar en el mapa desde una ficha
+    window.enfocarEnMapa = function(id) {
+      const p = prediosData.find(item => item.id === id);
+      if (!p || !p.has_coords) return;
+
+      map.flyTo([p.lat, p.lng], 12, { duration: 1.2 });
+      const marker = markersById[id];
+      if (marker) {
+        setTimeout(() => marker.openPopup(), 400);
+      }
+
+      // En pantallas móviles/tablets hacer scroll suave hacia el mapa
+      if (window.innerWidth < 1024) {
+        document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    };
+
+    // Filtrar o enfocar en el mapa una zona específica de PATChaco
+    window.filtrarOEnfocarZona = function(zonaNum) {
+      if (!layerZonas) return;
+      const bounds = L.latLngBounds();
+      let encontrado = false;
+
+      layerZonas.eachLayer(layer => {
+        if (layer.feature && layer.feature.properties && layer.feature.properties.zona === zonaNum) {
+          bounds.extend(layer.getBounds());
+          encontrado = true;
+          // Efecto de realce visual momentáneo
+          layer.setStyle({ fillOpacity: 0.55, weight: 2.5, color: '#ffffff' });
+          setTimeout(() => layerZonas.resetStyle(layer), 2000);
+        }
+      });
+
+      if (encontrado) {
+        map.fitBounds(bounds, { padding: [20, 20] });
+      }
+    };
+
+    // Reajustar vista general del mapa
+    window.reajustarVistaMapa = function() {
+      if (markersGroup.getLayers().length > 0) {
+        map.fitBounds(markersGroup.getBounds(), { padding: [40, 40] });
+      } else if (layerZonas && layerZonas.getLayers().length > 0) {
+        map.fitBounds(layerZonas.getBounds(), { padding: [20, 20] });
+      }
+    };
 
     // --- FUNCIÓN PARA POBLAR EL SELECTOR DE PROVINCIAS DINÁMICAMENTE ---
     function actualizarOpcionesProvincias() {
@@ -488,6 +806,7 @@
 
       grid.innerHTML = '';
       markersGroup.clearLayers();
+      Object.keys(markersById).forEach(k => delete markersById[k]);
 
       let totalSup = 0;
       let totalManejo = 0;
@@ -520,43 +839,60 @@
           countGeoref++;
           const marker = L.marker([p.lat, p.lng], { icon: greenIcon })
             .bindPopup(`
-              <div style="font-family: sans-serif; font-size: 12px; line-height: 1.4;">
+              <div style="font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.4;">
                 <b style="font-size: 14px; color: #0284c7;">${p.nombre}</b><br>
                 <span><b>Titular:</b> ${p.titulares}</span><br>
-                <span><b>Localidad:</b> ${p.localidad} (${p.depto})</span><br>
-                <span><b>Sup. Manejo:</b> ${p.sup_manejo} ha</span><br>
-                <div style="margin-top: 4px; border-top: 1px solid #e2e8f0; pt-1">
+                <span><b>Localidad:</b> ${p.localidad} (${p.depto}, ${p.provincia})</span><br>
+                <span><b>Sup. Manejo:</b> ${p.sup_manejo.toLocaleString('es-AR')} ha</span><br>
+                <div style="margin-top: 4px; border-top: 1px solid #e2e8f0; padding-top: 4px;">
                   <span><b>Bovinos:</b> ${p.bovinos} | <b>Ovinos:</b> ${p.ovinos}</span><br>
                   <span><b>Caprinos:</b> ${p.caprinos} | <b>Equinos:</b> ${p.equinos} | <b>Porcinos:</b> ${p.porcinos}</span>
                 </div>
-                <button onclick="verDetallePredio(${p.id})" style="margin-top:8px; width:100%; color:#fff; background:#0284c7; border:none; padding:5px 8px; border-radius:6px; cursor:pointer; font-weight:600;">Ver Detalle</button>
+                <button onclick="verDetallePredio(${p.id})" style="margin-top:8px; width:100%; color:#fff; background:#0284c7; border:none; padding:6px 10px; border-radius:8px; cursor:pointer; font-weight:600; font-size:11px;">Ver Ficha Completa</button>
               </div>
             `);
           markersGroup.addLayer(marker);
+          markersById[p.id] = marker;
         }
 
-        const cardHTML = `
-          <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-700/60 flex flex-col justify-between hover:border-sky-500/50 transition-all">
-            <div>
-              <div class="flex justify-between items-start mb-2">
-                <div>
-                  <h4 class="font-bold text-slate-800 dark:text-white text-base">${p.nombre}</h4>
-                  <p class="text-xs text-slate-400">${p.localidad} • ${p.depto}</p>
-                </div>
-                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${p.has_coords ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}">
-                  ${p.has_coords ? 'Georeferenciado' : 'Sin mapa'}
-                </span>
-              </div>
+        const estaAbierta = fichasAbiertas.has(p.id);
 
-              <p class="text-xs text-slate-600 dark:text-slate-300 font-medium mb-3">
-                <span class="text-slate-400">Titular:</span> ${p.titulares}
+        const cardHTML = `
+          <div id="card-predio-${p.id}" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/60 overflow-hidden transition-all duration-200 hover:shadow-md ${estaAbierta ? 'ring-2 ring-sky-500/30 border-sky-500/40' : ''}">
+            
+            <!-- CABECERA RESUMIDA (SIEMPRE VISIBLE / CLICKABLE PARA EXPANDIR) -->
+            <div onclick="togglePredioCard(${p.id})" class="p-4 sm:p-4 cursor-pointer select-none flex flex-col gap-2 hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors">
+              <div class="flex justify-between items-start gap-2">
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-bold text-slate-800 dark:text-white text-base leading-snug truncate" title="${p.nombre}">${p.nombre}</h4>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                    <span>${p.localidad} • ${p.depto}</span>
+                    <span class="text-slate-300 dark:text-slate-600 font-semibold">•</span>
+                    <span class="text-slate-400 font-medium">${p.provincia}</span>
+                  </p>
+                </div>
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                  <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${p.has_coords ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'}">
+                    ${p.has_coords ? '● Georeferenciado' : '○ Sin mapa'}
+                  </span>
+                  <div class="p-1 rounded-lg text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition-transform">
+                    <i id="chevron-predio-${p.id}" data-feather="chevron-down" class="h-4 w-4 transform transition-transform duration-200 ${estaAbierta ? 'rotate-180' : ''}"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CUERPO DESPLEGABLE (OCULTO POR DEFECTO / SE ABRE AL HACER CLIC) -->
+            <div id="body-predio-${p.id}" class="${estaAbierta ? '' : 'hidden'} px-4 pb-4 sm:px-4 sm:pb-4 border-t border-slate-100 dark:border-slate-700/60 pt-3 space-y-3 bg-slate-50/50 dark:bg-slate-800/40">
+              <p class="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                <span class="text-slate-400 font-normal">Titular:</span> ${p.titulares}
               </p>
 
-              <!-- GRILLA DE MÉTRICAS DE LA TARJETA (2 Filas: Sup y Ganadería) -->
-              <div class="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 my-3 space-y-2">
-                <div class="flex justify-between items-center text-xs pb-1.5 border-b border-slate-200/60 dark:border-slate-800">
+              <!-- GRILLA DE MÉTRICAS DE LA TARJETA (Sup y Ganadería) -->
+              <div class="bg-white dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-200/70 dark:border-slate-800 space-y-2">
+                <div class="flex justify-between items-center text-xs pb-1.5 border-b border-slate-100 dark:border-slate-800">
                   <span class="text-[10px] text-slate-400 font-bold uppercase">Sup. Manejo</span>
-                  <span class="font-extrabold text-slate-800 dark:text-white">${p.sup_manejo} ha</span>
+                  <span class="font-extrabold text-slate-800 dark:text-white">${p.sup_manejo.toLocaleString('es-AR')} ha</span>
                 </div>
                 
                 <div class="grid grid-cols-5 gap-1 text-center">
@@ -582,19 +918,27 @@
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div class="pt-2">
-              <button onclick="verDetallePredio(${p.id})" class="flex items-center justify-center gap-2 w-full py-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs rounded-xl transition-all shadow-sm">
-                Ficha Completa <i data-feather="eye" class="h-3.5 w-3.5"></i>
-              </button>
+              <!-- BOTONES DE ACCIÓN: FICHA COMPLETA Y VER EN MAPA -->
+              <div class="pt-1 flex items-center gap-2">
+                <button onclick="verDetallePredio(${p.id})" class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs rounded-xl transition-all shadow-sm">
+                  <span>Ficha Completa</span>
+                  <i data-feather="file-text" class="h-3.5 w-3.5"></i>
+                </button>
+                ${p.has_coords ? `
+                  <button onclick="enfocarEnMapa(${p.id})" title="Centrar y ver en el mapa" class="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl transition-all flex items-center justify-center">
+                    <i data-feather="map-pin" class="h-4 w-4"></i>
+                  </button>
+                ` : ''}
+              </div>
             </div>
           </div>
         `;
         grid.insertAdjacentHTML('beforeend', cardHTML);
       });
 
-      // ACTUALIZACIÓN DE KPIS GLOBALES
+      // ACTUALIZACIÓN DE KPIS GLOBALES Y CONTADOR
+      if (badgeContador) badgeContador.innerText = `${filtered.length} unidades`;
       document.getElementById('kpi-count-predios').innerText = `${filtered.length} Unidades Consolidadas`;
       document.getElementById('kpi-sup-total').innerText = `${totalSup.toLocaleString('es-AR')} ha`;
       document.getElementById('kpi-sup-manejo').innerText = `${totalManejo.toLocaleString('es-AR')} ha`;
@@ -609,6 +953,7 @@
         map.fitBounds(markersGroup.getBounds(), { padding: [30, 30] });
       }
 
+      markersGroup.bringToFront();
       feather.replace();
     }
 
